@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Power Hour Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --clay:    #c8a97e;
+    --sand:    #e8d9c3;
+    --cream:   #f7f1e8;
+    --bark:    #6b4c2a;
+    --espresso:#3a2612;
+    --gold:    #c9993a;
+    --sage:    #8a9e7c;
+    --rust:    #b05c3a;
+    --white:   #fdfaf5;
+    --shadow:  rgba(58,38,18,.15);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Jost', sans-serif;
+    background: var(--cream);
+    color: var(--espresso);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--espresso);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .75rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0,0,0,.3);
+  }
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.35rem;
+    color: var(--clay);
+    letter-spacing: .04em;
+    line-height: 1.1;
+  }
+  .logo span { color: var(--gold); font-weight: 700; }
+  .header-date {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    color: var(--sand);
+    font-size: .85rem;
+    font-weight: 500;
+  }
+  .header-date input[type="date"] {
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(200,169,126,.35);
+    color: var(--clay);
+    font-family: 'Jost', sans-serif;
+    font-size: .85rem;
+    padding: .3rem .6rem;
+    border-radius: 6px;
+    outline: none;
+    cursor: pointer;
+  }
+  .header-date input[type="date"]:focus { border-color: var(--gold); }
+
+  /* ── NAV TABS ── */
+  .nav-tabs {
+    background: var(--bark);
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: 0 0 auto;
+    padding: .7rem 1.4rem;
+    color: var(--sand);
+    font-size: .82rem;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .tab:hover:not(.active) { color: var(--clay); }
+
+  /* ── MAIN LAYOUT ── */
+  main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--white);
+    border-radius: 14px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 18px var(--shadow);
+    border: 1px solid rgba(200,169,126,.2);
+  }
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--bark);
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding-bottom: .75rem;
+    border-bottom: 2px solid var(--sand);
+  }
+  .card-title .icon { font-size: 1.1rem; }
+
+  /* ── METRICS GRID ── */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+  }
+  .metric-item label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--clay);
+    margin-bottom: .35rem;
+  }
+  .metric-item input[type="number"] {
+    width: 100%;
+    padding: .6rem .8rem;
+    border: 1.5px solid var(--sand);
+    border-radius: 8px;
+    font-family: 'Jost', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--espresso);
+    background: var(--cream);
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .metric-item input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,153,58,.15);
+  }
+
+  /* ── STAT PILLS ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+    gap: 1rem;
+    margin-top: 1.25rem;
+  }
+  .stat-pill {
+    background: linear-gradient(135deg, var(--bark), var(--espresso));
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+    color: var(--sand);
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-pill::before {
+    content: '';
+    position: absolute;
+    top: -20px; right: -20px;
+    width: 70px; height: 70px;
+    background: rgba(201,153,58,.12);
+    border-radius: 50%;
+  }
+  .stat-pill .val {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    color: var(--gold);
+    line-height: 1;
+    display: block;
+    margin-bottom: .3rem;
+  }
+  .stat-pill .lbl {
+    font-size: .68rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--clay);
+  }
+
+  /* ── PROGRESS BAR ── */
+  .perf-section { margin-top: 1.5rem; }
+  .perf-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: .6rem;
+  }
+  .perf-label { font-size: .8rem; font-weight: 600; color: var(--bark); letter-spacing: .04em; }
+  .perf-pct { font-size: .8rem; font-weight: 700; color: var(--gold); }
+  .bar-track {
+    background: var(--sand);
+    border-radius: 99px;
+    height: 10px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--clay), var(--gold));
+    transition: width .5s ease;
+  }
+  .score-badge {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: .45rem 1.1rem;
+    border-radius: 99px;
+    font-size: .78rem;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+  .score-low  { background: #f5e8e0; color: var(--rust); }
+  .score-mid  { background: #f5ecd8; color: #a0762a; }
+  .score-high { background: #e4eede; color: #4e7c47; }
+
+  /* ── LISTS ── */
+  .list-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.25rem;
+  }
+  .list-box { }
+  .list-box h4 {
+    font-size: .75rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--clay);
+    font-weight: 600;
+    margin-bottom: .6rem;
+  }
+  .list-box textarea {
+    width: 100%;
+    min-height: 90px;
+    padding: .65rem .8rem;
+    border: 1.5px solid var(--sand);
+    border-radius: 8px;
+    font-family: 'Jost', sans-serif;
+    font-size: .88rem;
+    color: var(--espresso);
+    background: var(--cream);
+    resize: vertical;
+    outline: none;
+    transition: border-color .2s;
+    line-height: 1.6;
+  }
+  .list-box textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,153,58,.15); }
+
+  /* ── PROSPECT TABLE ── */
+  .table-wrapper { overflow-x: auto; border-radius: 10px; border: 1px solid var(--sand); }
+  table { width: 100%; border-collapse: collapse; min-width: 780px; }
+  thead { background: var(--espresso); }
+  thead th {
+    padding: .7rem .8rem;
+    font-size: .68rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--clay);
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  tbody tr:nth-child(even) { background: rgba(232,217,195,.18); }
+  tbody tr { border-bottom: 1px solid var(--sand); transition: background .15s; }
+  tbody tr:hover { background: rgba(201,153,58,.08); }
+  td { padding: .5rem .6rem; }
+  td input, td select {
+    width: 100%;
+    padding: .35rem .45rem;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    font-family: 'Jost', sans-serif;
+    font-size: .83rem;
+    color: var(--espresso);
+    background: transparent;
+    outline: none;
+    transition: border-color .15s, background .15s;
+  }
+  td input:focus, td select:focus {
+    border-color: var(--gold);
+    background: var(--white);
+    box-shadow: 0 0 0 2px rgba(201,153,58,.12);
+  }
+  td select { cursor: pointer; }
+  .row-num {
+    width: 28px;
+    text-align: center;
+    font-size: .72rem;
+    color: var(--clay);
+    font-weight: 700;
+  }
+
+  /* ── BUTTONS ── */
+  .btn-row { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: 1.5rem; }
+  .btn {
+    padding: .6rem 1.3rem;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Jost', sans-serif;
+    font-size: .82rem;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    transition: transform .1s, box-shadow .2s;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px var(--shadow); }
+  .btn:active { transform: translateY(0); }
+  .btn-gold  { background: var(--gold); color: var(--white); }
+  .btn-bark  { background: var(--bark); color: var(--sand); }
+  .btn-rust  { background: var(--rust); color: var(--white); }
+  .btn-sage  { background: var(--sage); color: var(--white); }
+
+  /* ── WEEKLY VIEW ── */
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
+  }
+  .day-card {
+    background: var(--cream);
+    border: 1.5px solid var(--sand);
+    border-radius: 10px;
+    padding: .85rem;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .day-card:hover { border-color: var(--clay); background: var(--white); }
+  .day-card.has-data { border-color: var(--clay); }
+  .day-card .dc-date { font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; color: var(--clay); margin-bottom: .4rem; font-weight: 600; }
+  .day-card .dc-score {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    color: var(--bark);
+    line-height: 1;
+    margin-bottom: .2rem;
+  }
+  .day-card .dc-label { font-size: .68rem; color: #999; }
+  .week-totals {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: .75rem;
+    margin-top: 1.5rem;
+  }
+  .wt-item {
+    background: var(--white);
+    border-radius: 10px;
+    padding: .8rem 1rem;
+    border-left: 4px solid var(--clay);
+  }
+  .wt-item .wt-val { font-size: 1.3rem; font-weight: 700; color: var(--bark); }
+  .wt-item .wt-key { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--clay); margin-top: .15rem; }
+
+  /* ── TOASTS ── */
+  #toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: var(--espresso);
+    color: var(--sand);
+    padding: .75rem 1.25rem;
+    border-radius: 10px;
+    font-size: .84rem;
+    font-weight: 500;
+    box-shadow: 0 6px 24px rgba(0,0,0,.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s;
+    z-index: 999;
+    max-width: 280px;
+  }
+  #toast.show { opacity: 1; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    header { padding: 1rem; }
+    main { padding: 1rem .75rem 3rem; }
+    .stats-row, .metrics-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚡ Daily <span>Power Hour</span> Tracker</div>
+  <div class="header-date">
+    <span>📅</span>
+    <input type="date" id="globalDate">
+  </div>
+</header>
+
+<div class="nav-tabs">
+  <div class="tab active" onclick="switchTab('dashboard', this)">📊 Dashboard</div>
+  <div class="tab" onclick="switchTab('lists', this)">📋 Lists</div>
+  <div class="tab" onclick="switchTab('prospects', this)">👥 Prospects</div>
+  <div class="tab" onclick="switchTab('weekly', this)">🗓 Weekly View</div>
+</div>
+
+<main>
+
+  <!-- ═══════════ DASHBOARD ═══════════ -->
+  <div class="panel active" id="panel-dashboard">
+
+    <div class="card">
+      <div class="card-title"><span class="icon">🔢</span> Daily Activity Inputs</div>
+      <div class="metrics-grid">
+        <div class="metric-item">
+          <label>💬 Conversations</label>
+          <input type="number" id="conversations" min="0" value="0" oninput="recalc()">
+        </div>
+        <div class="metric-item">
+          <label>📨 Invitations</label>
+          <input type="number" id="invitations" min="0" value="0" oninput="recalc()">
+        </div>
+        <div class="metric-item">
+          <label>📅 Exposures Booked</label>
+          <input type="number" id="exposuresBooked" min="0" value="0" oninput="recalc()">
+        </div>
+        <div class="metric-item">
+          <label>✅ Exposures Completed</label>
+          <input type="number" id="exposuresCompleted" min="0" value="0" oninput="recalc()">
+        </div>
+        <div class="metric-item">
+          <label>📞 3-Way Calls</label>
+          <input type="number" id="threeway" min="0" value="0" oninput="recalc()">
+        </div>
+        <div class="metric-item">
+          <label>🏆 Enrollments</label>
+          <input type="number" id="enrollments" min="0" value="0" oninput="recalc()">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📈</span> Auto-Calculated Performance</div>
+      <div class="stats-row">
+        <div class="stat-pill">
+          <span class="val" id="totalScore">0</span>
+          <span class="lbl">Total Activity Score</span>
+        </div>
+        <div class="stat-pill">
+          <span class="val" id="convRate">0%</span>
+          <span class="lbl">Conversion Rate</span>
+        </div>
+        <div class="stat-pill">
+          <span class="val" id="bookRate">0%</span>
+          <span class="lbl">Booking Rate</span>
+        </div>
+        <div class="stat-pill">
+          <span class="val" id="showRate">0%</span>
+          <span class="lbl">Show Rate</span>
+        </div>
+      </div>
+
+      <div class="perf-section">
+        <div class="perf-header">
+          <span class="perf-label">🎯 Daily Performance Score</span>
+          <span class="perf-pct" id="perfPct">0%</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="perfBar" style="width:0%"></div></div>
+        <span class="score-badge score-low" id="scoreBadge">Getting Started</span>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-gold" onclick="saveDay()">💾 Save Day</button>
+      <button class="btn btn-bark" onclick="loadDay()">📂 Load Saved</button>
+      <button class="btn btn-sage" onclick="exportCSV()">⬇ Export CSV</button>
+      <button class="btn btn-rust" onclick="resetDay()">🔄 Reset Day</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ LISTS ═══════════ -->
+  <div class="panel" id="panel-lists">
+    <div class="card">
+      <div class="card-title"><span class="icon">📋</span> List Management</div>
+      <div class="list-grid">
+        <div class="list-box">
+          <h4>⭐ First Movers (3–5)</h4>
+          <textarea id="firstMovers" placeholder="Enter 3–5 key contacts moving first…"></textarea>
+        </div>
+        <div class="list-box">
+          <h4>🤝 Warm Market</h4>
+          <textarea id="warmMarket" placeholder="Friends, family, colleagues who know you…"></textarea>
+        </div>
+        <div class="list-box">
+          <h4>➕ New Contacts Added Today</h4>
+          <textarea id="newContacts" placeholder="Fresh connections from today…"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-gold" onclick="saveLists()">💾 Save Lists</button>
+      <button class="btn btn-bark" onclick="loadLists()">📂 Load Lists</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ PROSPECTS ═══════════ -->
+  <div class="panel" id="panel-prospects">
+    <div class="card">
+      <div class="card-title"><span class="icon">👥</span> Prospect Tracker — Top 10</div>
+      <div class="table-wrapper">
+        <table id="prospectTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Positive Attributes</th>
+              <th>How Business Helps</th>
+              <th>Contact 1</th>
+              <th>Contact 2</th>
+              <th>Contact 3</th>
+              <th>Outcome</th>
+            </tr>
+          </thead>
+          <tbody id="prospectBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-gold" onclick="saveProspects()">💾 Save Prospects</button>
+      <button class="btn btn-bark" onclick="loadProspects()">📂 Load Prospects</button>
+      <button class="btn btn-sage" onclick="exportProspectsCSV()">⬇ Export CSV</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ WEEKLY ═══════════ -->
+  <div class="panel" id="panel-weekly">
+    <div class="card">
+      <div class="card-title"><span class="icon">🗓</span> Weekly Overview</div>
+      <div class="week-grid" id="weekGrid"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">📊</span> Weekly Totals</div>
+      <div class="week-totals" id="weekTotals"></div>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+// ── Utilities ──────────────────────────────────────────────────────────────
+function today() {
+  return new Date().toISOString().slice(0,10);
+}
+function pct(a, b) {
+  if (!b || b === 0) return '0%';
+  return Math.round((a / b) * 100) + '%';
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+function storageKey() {
+  return 'pht_day_' + document.getElementById('globalDate').value;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+document.getElementById('globalDate').value = today();
+document.getElementById('globalDate').addEventListener('change', () => {
+  autoLoad();
+  renderWeekly();
+});
+
+// ── Recalc ────────────────────────────────────────────────────────────────
+function g(id) { return parseInt(document.getElementById(id).value) || 0; }
+
+function recalc() {
+  const conv = g('conversations'), inv = g('invitations'),
+        booked = g('exposuresBooked'), comp = g('exposuresCompleted'),
+        tw = g('threeway'), enr = g('enrollments');
+  const total = conv + inv + booked + comp + tw + enr;
+
+  document.getElementById('totalScore').textContent    = total;
+  document.getElementById('convRate').textContent      = pct(enr, comp);
+  document.getElementById('bookRate').textContent      = pct(booked, inv);
+  document.getElementById('showRate').textContent      = pct(comp, booked);
+
+  // Performance score: total out of 30 baseline
+  const score = Math.min(100, Math.round((total / 30) * 100));
+  document.getElementById('perfPct').textContent = score + '%';
+  document.getElementById('perfBar').style.width = score + '%';
+
+  const badge = document.getElementById('scoreBadge');
+  if (score < 34) {
+    badge.textContent = '🌱 Getting Started'; badge.className = 'score-badge score-low';
+  } else if (score < 70) {
+    badge.textContent = '🔥 Building Momentum'; badge.className = 'score-badge score-mid';
+  } else {
+    badge.textContent = '🏆 Power Performer'; badge.className = 'score-badge score-high';
+  }
+}
+
+// ── Tab Switching ──────────────────────────────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  el.classList.add('active');
+  if (name === 'weekly') renderWeekly();
+}
+
+// ── Save / Load Day ────────────────────────────────────────────────────────
+function getDayData() {
+  return {
+    conversations: g('conversations'), invitations: g('invitations'),
+    exposuresBooked: g('exposuresBooked'), exposuresCompleted: g('exposuresCompleted'),
+    threeway: g('threeway'), enrollments: g('enrollments'),
+    date: document.getElementById('globalDate').value
+  };
+}
+function saveDay() {
+  const data = getDayData();
+  localStorage.setItem(storageKey(), JSON.stringify(data));
+  toast('✅ Day saved!');
+}
+function loadDay() {
+  const raw = localStorage.getItem(storageKey());
+  if (!raw) { toast('⚠️ No saved data for this date.'); return; }
+  const d = JSON.parse(raw);
+  ['conversations','invitations','exposuresBooked','exposuresCompleted','threeway','enrollments'].forEach(k => {
+    document.getElementById(k).value = d[k] || 0;
+  });
+  recalc();
+  toast('📂 Data loaded!');
+}
+function autoLoad() {
+  const raw = localStorage.getItem(storageKey());
+  if (raw) {
+    const d = JSON.parse(raw);
+    ['conversations','invitations','exposuresBooked','exposuresCompleted','threeway','enrollments'].forEach(k => {
+      document.getElementById(k).value = d[k] || 0;
+    });
+    recalc();
+  } else {
+    ['conversations','invitations','exposuresBooked','exposuresCompleted','threeway','enrollments'].forEach(k => {
+      document.getElementById(k).value = 0;
+    });
+    recalc();
+  }
+}
+function resetDay() {
+  if (!confirm('Reset all inputs for today?')) return;
+  ['conversations','invitations','exposuresBooked','exposuresCompleted','threeway','enrollments'].forEach(k => {
+    document.getElementById(k).value = 0;
+  });
+  recalc();
+  toast('🔄 Day reset.');
+}
+
+// ── Export CSV ────────────────────────────────────────────────────────────
+function exportCSV() {
+  const d = getDayData();
+  const header = 'Date,Conversations,Invitations,Exposures Booked,Exposures Completed,3-Way Calls,Enrollments\n';
+  const row = `${d.date},${d.conversations},${d.invitations},${d.exposuresBooked},${d.exposuresCompleted},${d.threeway},${d.enrollments}\n`;
+  download('PowerHour_' + d.date + '.csv', header + row);
+  toast('⬇ CSV exported!');
+}
+function download(filename, content) {
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(content);
+  a.download = filename;
+  a.click();
+}
+
+// ── Lists ─────────────────────────────────────────────────────────────────
+function listsKey() { return 'pht_lists_' + document.getElementById('globalDate').value; }
+function saveLists() {
+  const data = {
+    firstMovers: document.getElementById('firstMovers').value,
+    warmMarket: document.getElementById('warmMarket').value,
+    newContacts: document.getElementById('newContacts').value
+  };
+  localStorage.setItem(listsKey(), JSON.stringify(data));
+  toast('✅ Lists saved!');
+}
+function loadLists() {
+  const raw = localStorage.getItem(listsKey());
+  if (!raw) { toast('⚠️ No saved lists for this date.'); return; }
+  const d = JSON.parse(raw);
+  document.getElementById('firstMovers').value = d.firstMovers || '';
+  document.getElementById('warmMarket').value  = d.warmMarket  || '';
+  document.getElementById('newContacts').value = d.newContacts || '';
+  toast('📂 Lists loaded!');
+}
+
+// ── Prospect Table ─────────────────────────────────────────────────────────
+function prospectKey() { return 'pht_prospects_' + document.getElementById('globalDate').value; }
+
+const outcomes = ['–','Enrolled','Follow Up','Not Interested','Pending'];
+
+function buildProspectTable(data) {
+  const tbody = document.getElementById('prospectBody');
+  tbody.innerHTML = '';
+  for (let i = 0; i < 10; i++) {
+    const r = data && data[i] ? data[i] : {};
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="row-num">${i+1}</td>
+      <td><input type="text" placeholder="Full name" value="${r.name||''}"></td>
+      <td><input type="text" placeholder="e.g. Motivated, leader…" value="${r.attrs||''}"></td>
+      <td><input type="text" placeholder="Time freedom, income…" value="${r.helps||''}"></td>
+      <td><input type="text" placeholder="MM/DD" value="${r.c1||''}"></td>
+      <td><input type="text" placeholder="MM/DD" value="${r.c2||''}"></td>
+      <td><input type="text" placeholder="MM/DD" value="${r.c3||''}"></td>
+      <td>
+        <select>
+          ${outcomes.map(o => `<option ${(r.outcome||'–')===o?'selected':''}>${o}</option>`).join('')}
+        </select>
+      </td>`;
+    tbody.appendChild(tr);
+  }
+}
+function getProspectData() {
+  const rows = [];
+  document.querySelectorAll('#prospectBody tr').forEach(tr => {
+    const cells = tr.querySelectorAll('input, select');
+    rows.push({
+      name: cells[0].value, attrs: cells[1].value, helps: cells[2].value,
+      c1: cells[3].value, c2: cells[4].value, c3: cells[5].value,
+      outcome: cells[6].value
+    });
+  });
+  return rows;
+}
+function saveProspects() {
+  localStorage.setItem(prospectKey(), JSON.stringify(getProspectData()));
+  toast('✅ Prospects saved!');
+}
+function loadProspects() {
+  const raw = localStorage.getItem(prospectKey());
+  buildProspectTable(raw ? JSON.parse(raw) : null);
+  toast(raw ? '📂 Prospects loaded!' : '⚠️ No saved prospects for this date.');
+}
+function exportProspectsCSV() {
+  const rows = getProspectData();
+  const header = 'Name,Attributes,How Business Helps,Contact 1,Contact 2,Contact 3,Outcome\n';
+  const body = rows.map(r => `"${r.name}","${r.attrs}","${r.helps}","${r.c1}","${r.c2}","${r.c3}","${r.outcome}"`).join('\n');
+  download('Prospects_' + document.getElementById('globalDate').value + '.csv', header + body);
+  toast('⬇ Prospects CSV exported!');
+}
+
+// ── Weekly View ────────────────────────────────────────────────────────────
+function renderWeekly() {
+  const anchor = new Date(document.getElementById('globalDate').value + 'T00:00:00');
+  const dayOfWeek = anchor.getDay(); // 0=Sun
+  const monday = new Date(anchor);
+  monday.setDate(anchor.getDate() - ((dayOfWeek + 6) % 7));
+
+  const grid = document.getElementById('weekGrid');
+  const totalsEl = document.getElementById('weekTotals');
+  grid.innerHTML = ''; totalsEl.innerHTML = '';
+
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const keys = ['conversations','invitations','exposuresBooked','exposuresCompleted','threeway','enrollments'];
+  const weekTotals = Object.fromEntries(keys.map(k => [k, 0]));
+  weekTotals.total = 0;
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const dateStr = d.toISOString().slice(0,10);
+    const raw = localStorage.getItem('pht_day_' + dateStr);
+    const data = raw ? JSON.parse(raw) : null;
+    const score = data ? keys.reduce((s, k) => s + (parseInt(data[k])||0), 0) : 0;
+    if (data) keys.forEach(k => { weekTotals[k] += (parseInt(data[k])||0); weekTotals.total += (parseInt(data[k])||0); });
+
+    const card = document.createElement('div');
+    card.className = 'day-card' + (data ? ' has-data' : '');
+    card.innerHTML = `
+      <div class="dc-date">${days[i]} · ${dateStr.slice(5)}</div>
+      <div class="dc-score">${score}</div>
+      <div class="dc-label">${data ? 'Activity Score' : 'No Data'}</div>`;
+    card.onclick = () => {
+      document.getElementById('globalDate').value = dateStr;
+      autoLoad();
+      switchTab('dashboard', document.querySelector('.tab'));
+    };
+    grid.appendChild(card);
+  }
+
+  // Totals
+  const labels = {
+    conversations:'💬 Conversations', invitations:'📨 Invitations',
+    exposuresBooked:'📅 Booked', exposuresCompleted:'✅ Completed',
+    threeway:'📞 3-Way Calls', enrollments:'🏆 Enrollments',
+    total:'⚡ Total Activity'
+  };
+  [...keys, 'total'].forEach(k => {
+    const div = document.createElement('div');
+    div.className = 'wt-item';
+    div.innerHTML = `<div class="wt-val">${weekTotals[k]}</div><div class="wt-key">${labels[k]}</div>`;
+    totalsEl.appendChild(div);
+  });
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────
+buildProspectTable(null);
+recalc();
+</script>
+</body>
+</html>
